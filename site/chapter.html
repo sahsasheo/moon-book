@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Под Огромной Луной — глава</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body data-page="chapter">
+    <div class="shell">
+      <header class="site-header site-header--compact">
+        <p class="eyebrow"><a href="./index.html">Назад к указателю</a></p>
+        <h1 id="chapter-page-title">Глава</h1>
+        <p id="chapter-page-meta" class="lede"></p>
+      </header>
+
+      <main class="panel">
+        <article class="chapter-page">
+          <div class="chapter-page__meta" id="chapter-page-badges"></div>
+          <p id="chapter-page-summary" class="chapter-page__summary"></p>
+          <div id="chapter-page-text" class="chapter-page__text" aria-label="Полный текст главы"></div>
+
+          <section class="chapter-page__tags">
+            <h2>Сценические теги</h2>
+            <div id="chapter-page-tags" class="tag-filters"></div>
+          </section>
+
+          <nav class="chapter-nav" aria-label="Навигация по главам">
+            <a id="prev-chapter" class="chapter-nav__link" href="#">Предыдущая глава</a>
+            <a id="next-chapter" class="chapter-nav__link" href="#">Следующая глава</a>
+          </nav>
+        </article>
+      </main>
+    </div>
+  </body>
+</html>
