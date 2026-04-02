@@ -12,24 +12,28 @@
       <header class="site-header site-header--compact">
         <p class="eyebrow"><a href="./index.html">Назад к указателю</a></p>
         <h1 id="chapter-page-title">Глава</h1>
-        <p id="chapter-page-meta" class="lede"></p>
       </header>
 
-      <main class="panel">
-        <article class="chapter-page">
-          <div class="chapter-page__meta" id="chapter-page-badges"></div>
-          <p id="chapter-page-summary" class="chapter-page__summary"></p>
-          <div id="chapter-page-text" class="chapter-page__text" aria-label="Полный текст главы"></div>
+      <main class="panel chapter-page-panel">
+        <article class="chapter-page chapter-page--single">
+          <header class="chapter-page__header">
+            <p class="eyebrow eyebrow--chapter">Чтение главы</p>
+          </header>
 
-          <section class="chapter-page__tags">
-            <h2>Сценические теги</h2>
-            <div id="chapter-page-tags" class="tag-filters"></div>
-          </section>
+          <div class="chapter-page__reading">
+            <p id="chapter-page-intro" class="chapter-page__intro"></p>
+            <div id="chapter-page-video" class="chapter-page__video" hidden></div>
+            <div id="chapter-page-text" class="chapter-page__text" aria-label="Полный текст главы"></div>
+          </div>
 
-          <nav class="chapter-nav" aria-label="Навигация по главам">
-            <a id="prev-chapter" class="chapter-nav__link" href="#">Предыдущая глава</a>
-            <a id="next-chapter" class="chapter-nav__link" href="#">Следующая глава</a>
-          </nav>
+          <footer class="chapter-page__footer">
+            <div id="chapter-page-tags" class="tag-filters chapter-page__tags"></div>
+
+            <nav class="chapter-nav" aria-label="Навигация по главам">
+              <a id="prev-chapter" class="chapter-nav__link" href="#">Предыдущая глава</a>
+              <a id="next-chapter" class="chapter-nav__link" href="#">Следующая глава</a>
+            </nav>
+          </footer>
         </article>
       </main>
     </div>

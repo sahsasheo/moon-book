@@ -57,21 +57,79 @@ function escapeForText(value) {
   return value ?? "";
 }
 
-function renderReadableMarkdown(container, markdown) {
+function normalizePlainText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripMarkdownHeading(value) {
+  return normalizePlainText(value).replace(/^##\s*/, "");
+}
+
+function resolveVideoSource(videoUrl) {
+  const value = String(videoUrl || "").trim();
+  if (!value) {
+    return "";
+  }
+  if (/^(?:[a-z]+:)?\/\//i.test(value) || value.startsWith("/") || value.startsWith(".")) {
+    return value;
+  }
+  return `../book/videos/${value}`;
+}
+
+function isTagOnlyLine(line) {
+  return /^#\S+(?:\s+#\S+)*$/.test(line.trim());
+}
+
+function removeEdgeTagLines(markdown) {
+  const lines = String(markdown || "").replace(/\r\n/g, "\n").trim().split("\n");
+
+  while (lines.length > 0 && !lines[0].trim()) {
+    lines.shift();
+  }
+
+  while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+    lines.pop();
+  }
+
+  if (lines.length > 0 && isTagOnlyLine(lines[0])) {
+    lines.shift();
+  }
+
+  if (lines.length > 0 && isTagOnlyLine(lines[lines.length - 1])) {
+    lines.pop();
+  }
+
+  return lines.join("\n").trim();
+}
+
+function renderReadableMarkdown(container, markdown, chapterTitle) {
   container.replaceChildren();
 
-  const blocks = String(markdown || "")
-    .replace(/\r\n/g, "\n")
+  const blocks = removeEdgeTagLines(markdown)
     .trim()
     .split(/\n{2,}/)
     .map((block) => block.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((block) => !/^\[video:\s*.+\]$/i.test(block));
+
+  let skippedDuplicateTitle = false;
 
   for (const block of blocks) {
     if (/^##\s+/.test(block)) {
+      const headingText = block.replace(/^##\s+/, "");
+      if (
+        !skippedDuplicateTitle &&
+        stripMarkdownHeading(headingText) === stripMarkdownHeading(chapterTitle)
+      ) {
+        skippedDuplicateTitle = true;
+        continue;
+      }
+
       const title = document.createElement("h2");
       title.className = "chapter-page__text-title";
-      title.textContent = block.replace(/^##\s+/, "");
+      title.textContent = headingText;
       container.append(title);
       continue;
     }
@@ -81,6 +139,38 @@ function renderReadableMarkdown(container, markdown) {
     paragraph.textContent = block.replace(/^\*(.*)\*$/, "$1");
     container.append(paragraph);
   }
+}
+
+function renderVideoBlock(container, chapter) {
+  const videoUrl = chapter?.chapter_video_url || chapter?.video_url || "";
+  container.replaceChildren();
+
+  if (!videoUrl) {
+    container.hidden = true;
+    return;
+  }
+
+  const isVideoFile = /\.(mp4|webm|ogg)(?:$|\?|\#)/i.test(videoUrl);
+  const source = resolveVideoSource(videoUrl);
+
+  if (isVideoFile) {
+    const video = document.createElement("video");
+    video.controls = true;
+    video.preload = "metadata";
+    video.src = source;
+    video.className = "chapter-page__video-media";
+    container.append(video);
+  } else {
+    const iframe = document.createElement("iframe");
+    iframe.src = source;
+    iframe.title = `Видео к главе ${chapter.chapter_number}`;
+    iframe.loading = "lazy";
+    iframe.allowFullscreen = true;
+    iframe.className = "chapter-page__video-media";
+    container.append(iframe);
+  }
+
+  container.hidden = false;
 }
 
 function createChip({ label, onClick, active = false, clear = false }) {
@@ -242,24 +332,23 @@ function renderChapterPage() {
   const chapter = id ? getChapterById(id) : state.visibleChapters[0] || null;
 
   const pageTitle = byId("chapter-page-title");
-  const pageMeta = byId("chapter-page-meta");
-  const pageBadges = byId("chapter-page-badges");
-  const pageSummary = byId("chapter-page-summary");
+  const pageIntro = byId("chapter-page-intro");
+  const pageVideo = byId("chapter-page-video");
   const pageText = byId("chapter-page-text");
   const pageTags = byId("chapter-page-tags");
   const prevLink = byId("prev-chapter");
   const nextLink = byId("next-chapter");
 
-  if (!pageTitle || !pageMeta || !pageBadges || !pageSummary || !pageText || !pageTags || !prevLink || !nextLink) {
+  if (!pageTitle || !pageIntro || !pageVideo || !pageText || !pageTags || !prevLink || !nextLink) {
     return;
   }
 
   if (!chapter || !isPublicChapter(chapter)) {
     pageTitle.textContent = "Глава недоступна";
-    pageMeta.textContent = "Эта глава скрыта или не найдена.";
-    pageBadges.replaceChildren();
-    pageSummary.textContent = "На публичных страницах показываются только главы с visibility = public.";
+    pageIntro.textContent = "Эта глава скрыта или не найдена.";
     pageText.replaceChildren();
+    pageVideo.replaceChildren();
+    pageVideo.hidden = true;
     pageTags.replaceChildren();
     prevLink.textContent = "Предыдущая глава";
     prevLink.setAttribute("aria-disabled", "true");
@@ -272,19 +361,10 @@ function renderChapterPage() {
 
   document.title = `Под Огромной Луной — ${chapter.chapter_title}`;
   pageTitle.textContent = `${chapter.chapter_number}. ${chapter.chapter_title}`;
-  pageMeta.textContent = `${chapter.chapter_type || ""} · ${chapter.visibility === "public" ? "публичная глава" : "скрытая глава"}`;
-  pageBadges.replaceChildren();
 
-  const numberBadge = document.createElement("span");
-  numberBadge.className = "chapter-page__badge";
-  numberBadge.textContent = `Глава ${chapter.chapter_number}`;
-  const typeBadge = document.createElement("span");
-  typeBadge.className = "chapter-page__badge";
-  typeBadge.textContent = chapter.chapter_type || "Без типа";
-  pageBadges.append(numberBadge, typeBadge);
-
-  pageSummary.textContent = chapter.short_summary || "";
-  renderReadableMarkdown(pageText, chapter.full_text_markdown || "");
+  pageIntro.textContent = chapter.chapter_annotation || chapter.short_summary || "";
+  renderVideoBlock(pageVideo, chapter);
+  renderReadableMarkdown(pageText, chapter.full_text_markdown || "", chapter.chapter_title || "");
 
   pageTags.replaceChildren();
   for (const tag of chapter.scene_tags || []) {

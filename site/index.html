@@ -10,15 +10,17 @@
   <body data-page="index">
     <div class="shell">
       <header class="site-header">
-        <p class="eyebrow">Тестовый читательский сайт</p>
-        <h1>Под Огромной Луной</h1>
-        <p class="lede">
-          Указатель глав и фильтр по сценическим тегам. Публичные страницы
-          скрывают главы с visibility = internal.
-        </p>
+        <div class="site-header__copy">
+          <p class="eyebrow">Указатель доступа</p>
+          <h1>Под Огромной Луной</h1>
+          <p class="lede">
+            Указатель глав и фильтр по сценическим тегам. Публичные страницы
+            скрывают главы с visibility = internal.
+          </p>
+        </div>
       </header>
 
-      <main class="panel">
+      <main class="panel panel--index">
         <section class="toolbar" aria-label="Фильтр по сценическим тегам">
           <div class="toolbar__title">
             <h2>Сценические теги</h2>
@@ -27,7 +29,7 @@
           <div id="tag-filters" class="tag-filters" aria-live="polite"></div>
         </section>
 
-        <section class="chapters">
+        <section class="chapters" aria-label="Список глав">
           <div class="chapters__title">
             <h2>Главы</h2>
             <p id="chapter-count"></p>

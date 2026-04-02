@@ -84,6 +84,22 @@ function extractMarkdownTitle(markdown) {
   return match ? normalizeTitle(match[1]) : "";
 }
 
+function extractVideoFromMarkdown(markdown, chapterNumber) {
+  const source = String(markdown || "").replace(/\r\n/g, "\n");
+  const hasVideoLine = /^\[video:\s*(.+?)\]\s*$/m.test(source);
+  const normalizedUrl = hasVideoLine ? `video_${String(chapterNumber).padStart(3, "0")}.mp4` : null;
+
+  const cleanedText = source
+    .replace(/^\[video:\s*(.+?)\]\s*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return {
+    videoUrl: normalizedUrl,
+    cleanedText,
+  };
+}
+
 function warn(warnings, message) {
   warnings.push(message);
   console.warn(message);
@@ -113,6 +129,8 @@ async function build() {
       );
     }
 
+    const { videoUrl, cleanedText } = extractVideoFromMarkdown(fullText, item.chapter_number);
+
     chapters.push({
       id,
       chapter_number: item.chapter_number,
@@ -123,7 +141,8 @@ async function build() {
       visibility: "public",
       previous_id: i > 0 ? chapterId(indexChapters[i - 1].chapter_number) : null,
       next_id: i < indexChapters.length - 1 ? chapterId(indexChapters[i + 1].chapter_number) : null,
-      full_text_markdown: fullText ?? "",
+      chapter_video_url: videoUrl,
+      full_text_markdown: cleanedText,
     });
   }
 
