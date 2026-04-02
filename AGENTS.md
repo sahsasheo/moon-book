@@ -18,6 +18,7 @@
 - `book/context/knowledge_tags_notes.md`
 - `book/context/editor_decisions.md`
 - `book/context/knowledge_tag_dictionary.md`
+- `book/context/hq_dossier.md`
 
 Если работаешь с конкретной главой или сценой, читай также:
 
