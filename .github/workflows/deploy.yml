@@ -30,8 +30,8 @@ jobs:
 
       - name: Prepare deploy bundle
         run: |
+          rsync -a site/ deploy/
           mkdir -p deploy/book/site_data
-          rsync -a --delete site/ deploy/
           cp book/site_data/chapters_full.json deploy/book/site_data/chapters_full.json
 
       - name: Install SSH key
