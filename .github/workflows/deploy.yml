@@ -31,6 +31,20 @@ jobs:
       - name: Prepare deploy bundle
         run: |
           mkdir -p deploy/book/site_data
+          cat > deploy/index.html <<'EOF'
+          <!doctype html>
+          <html lang="ru">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <meta http-equiv="refresh" content="0; url=/site/" />
+              <title>Под Огромной Луной</title>
+            </head>
+            <body>
+              <p><a href="/site/">Перейти к сайту</a></p>
+            </body>
+          </html>
+          EOF
           rsync -a --delete site/ deploy/site/
           cp book/site_data/chapters_full.json deploy/book/site_data/chapters_full.json
 
