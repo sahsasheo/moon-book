@@ -1,4 +1,4 @@
-const DATA_URL = "../book/site_data/chapters_full.json";
+const DATA_URL = "/book/site_data/chapters_full.json";
 
 const state = {
   chapters: [],
