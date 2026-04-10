@@ -12,6 +12,8 @@ const paths = {
   output: path.join(repoRoot, "book/site_data/chapters_full.json"),
 };
 
+const VIDEO_BASE_URL = process.env.VIDEO_BASE_URL?.trim() || "";
+
 function chapterId(number) {
   return `ch-${String(number).padStart(3, "0")}`;
 }
@@ -84,10 +86,17 @@ function extractMarkdownTitle(markdown) {
   return match ? normalizeTitle(match[1]) : "";
 }
 
-function extractVideoFromMarkdown(markdown, chapterNumber) {
+function extractVideoFromMarkdown(markdown) {
   const source = String(markdown || "").replace(/\r\n/g, "\n");
-  const hasVideoLine = /^\[video:\s*(.+?)\]\s*$/m.test(source);
-  const normalizedUrl = hasVideoLine ? `video_${String(chapterNumber).padStart(3, "0")}.mp4` : null;
+  const videoMatch = source.match(/^\[video:\s*(.+?)\]\s*$/m);
+  const videoFile = videoMatch ? videoMatch[1].trim() : "";
+  const normalizedUrl = videoFile
+    ? (/^(?:[a-z]+:)?\/\//i.test(videoFile) || videoFile.startsWith("/") || videoFile.startsWith(".")
+        ? videoFile
+        : VIDEO_BASE_URL
+          ? `${VIDEO_BASE_URL.replace(/\/+$/, "")}/${videoFile.replace(/^\/+/, "")}`
+          : videoFile)
+    : null;
 
   const cleanedText = source
     .replace(/^\[video:\s*(.+?)\]\s*$/gm, "")
@@ -129,7 +138,7 @@ async function build() {
       );
     }
 
-    const { videoUrl, cleanedText } = extractVideoFromMarkdown(fullText, item.chapter_number);
+    const { videoUrl, cleanedText } = extractVideoFromMarkdown(fullText);
 
     chapters.push({
       id,
