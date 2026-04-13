@@ -104,6 +104,23 @@ function removeEdgeTagLines(markdown) {
   return lines.join("\n").trim();
 }
 
+function extractAnnotation(markdown) {
+  const source = String(markdown || "").replace(/\r\n/g, "\n");
+  const match = source.match(/^\s*\[annotation\]\s*([\s\S]*?)\s*\[\/annotation\]\s*/i);
+
+  if (!match) {
+    return {
+      annotation: "",
+      cleanedText: source,
+    };
+  }
+
+  return {
+    annotation: match[1].replace(/\s+/g, " ").trim(),
+    cleanedText: source.slice(match[0].length).trim(),
+  };
+}
+
 function renderReadableMarkdown(container, markdown, chapterTitle) {
   container.replaceChildren();
 
@@ -362,9 +379,11 @@ function renderChapterPage() {
   document.title = `Под Огромной Луной — ${chapter.chapter_title}`;
   pageTitle.textContent = `${chapter.chapter_number}. ${chapter.chapter_title}`;
 
-  pageIntro.textContent = chapter.chapter_annotation || chapter.short_summary || "";
+  const { annotation, cleanedText } = extractAnnotation(chapter.full_text_markdown || "");
+
+  pageIntro.textContent = chapter.chapter_annotation || annotation || chapter.short_summary || "";
   renderVideoBlock(pageVideo, chapter);
-  renderReadableMarkdown(pageText, chapter.full_text_markdown || "", chapter.chapter_title || "");
+  renderReadableMarkdown(pageText, cleanedText, chapter.chapter_title || "");
 
   pageTags.replaceChildren();
   for (const tag of chapter.scene_tags || []) {

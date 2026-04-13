@@ -79,7 +79,7 @@ async function readMarkdownFile(filePath) {
 
 function stripAnnotationBlock(markdown) {
   const source = String(markdown || "").replace(/\r\n/g, "\n");
-  const match = source.match(/^\s*\[annotation\]\s*\n([\s\S]*?)\n\[\/annotation\]\s*/);
+  const match = source.match(/^\s*\[annotation\]\s*([\s\S]*?)\s*\[\/annotation\]\s*/);
 
   if (!match) {
     return {
