@@ -24,10 +24,6 @@ function normalizeTitle(value) {
     .trim();
 }
 
-function stripHeadingNumber(value) {
-  return normalizeTitle(value).replace(/^##\s*/, "").replace(/^\d{2}\.\s*/, "");
-}
-
 function parseSceneTags(raw) {
   return String(raw || "")
     .split(/\s+/)
@@ -81,30 +77,86 @@ async function readMarkdownFile(filePath) {
   }
 }
 
-function extractMarkdownTitle(markdown) {
-  const match = String(markdown || "").match(/^##\s+(.+)$/m);
-  return match ? normalizeTitle(match[1]) : "";
+function stripAnnotationBlock(markdown) {
+  const source = String(markdown || "").replace(/\r\n/g, "\n");
+  const match = source.match(/^\s*\[annotation\]\s*\n([\s\S]*?)\n\[\/annotation\]\s*/);
+
+  if (!match) {
+    return {
+      annotation: "",
+      text: source,
+    };
+  }
+
+  return {
+    annotation: normalizeTitle(match[1].replace(/\n{3,}/g, "\n\n")),
+    text: source.slice(match[0].length),
+  };
 }
 
-function extractVideoFromMarkdown(markdown) {
-  const source = String(markdown || "").replace(/\r\n/g, "\n");
-  const videoMatch = source.match(/^\[video:\s*(.+?)\]\s*$/m);
-  const videoFile = videoMatch ? videoMatch[1].trim() : "";
-  const normalizedUrl = videoFile
-    ? (/^(?:[a-z]+:)?\/\//i.test(videoFile) || videoFile.startsWith("/") || videoFile.startsWith(".")
-        ? videoFile
-        : VIDEO_BASE_URL
-          ? `${VIDEO_BASE_URL.replace(/\/+$/, "")}/${videoFile.replace(/^\/+/, "")}`
-          : videoFile)
-    : null;
+function extractSceneTags(line) {
+  return String(line || "")
+    .trim()
+    .split(/\s+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .map((tag) => tag.replace(/^#/, ""));
+}
 
-  const cleanedText = source
-    .replace(/^\[video:\s*(.+?)\]\s*$/gm, "")
+function extractChapterStructure(markdown) {
+  const { annotation, text } = stripAnnotationBlock(markdown);
+  const source = text.replace(/\r\n/g, "\n");
+  const lines = source.split("\n");
+  const cleanedLines = [];
+  const sceneTags = [];
+  let title = "";
+  let videoUrl = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!title) {
+      const titleMatch = trimmed.match(/^##\s+(.+)$/);
+      if (titleMatch) {
+        title = normalizeTitle(titleMatch[1]);
+        cleanedLines.push(line);
+        continue;
+      }
+    }
+
+    if (/^\[video:\s*(.+?)\]\s*$/.test(trimmed)) {
+      if (!videoUrl) {
+        const videoMatch = trimmed.match(/^\[video:\s*(.+?)\]\s*$/);
+        const videoFile = videoMatch ? videoMatch[1].trim() : "";
+        videoUrl = videoFile
+          ? (/^(?:[a-z]+:)?\/\//i.test(videoFile) || videoFile.startsWith("/") || videoFile.startsWith(".")
+              ? videoFile
+              : VIDEO_BASE_URL
+                ? `${VIDEO_BASE_URL.replace(/\/+$/, "")}/${videoFile.replace(/^\/+/, "")}`
+                : videoFile)
+          : null;
+      }
+      continue;
+    }
+
+    if (/^#\S+(?:\s+#\S+)*$/.test(trimmed)) {
+      sceneTags.push(...extractSceneTags(trimmed));
+      continue;
+    }
+
+    cleanedLines.push(line);
+  }
+
+  const cleanedText = cleanedLines
+    .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   return {
-    videoUrl: normalizedUrl,
+    annotation,
+    title,
+    videoUrl,
+    sceneTags,
     cleanedText,
   };
 }
@@ -130,28 +182,28 @@ async function build() {
       warn(warnings, `[warn] Нет файла главы: ${path.relative(repoRoot, markdownPath)}`);
     }
 
-    const markdownTitle = extractMarkdownTitle(fullText);
-    if (markdownTitle && stripHeadingNumber(markdownTitle) !== stripHeadingNumber(item.chapter_title)) {
-      warn(
-        warnings,
-        `[warn] Заголовок не совпадает: ${id} | index="${item.chapter_title}" | markdown="${markdownTitle}"`,
-      );
+    const structure = extractChapterStructure(fullText);
+    if (!structure.title) {
+      warn(warnings, `[warn] В главе нет заголовка ##: ${id}`);
     }
 
-    const { videoUrl, cleanedText } = extractVideoFromMarkdown(fullText);
+    const resolvedTitle = structure.title || item.chapter_title;
+    const resolvedSummary = structure.annotation || item.short_summary || "";
+    const resolvedTags = structure.sceneTags.length > 0 ? structure.sceneTags : item.scene_tags;
 
     chapters.push({
       id,
       chapter_number: item.chapter_number,
-      chapter_title: item.chapter_title,
-      short_summary: item.short_summary,
+      chapter_title: resolvedTitle,
+      short_summary: resolvedSummary,
+      chapter_annotation: structure.annotation,
       chapter_type: item.chapter_type,
-      scene_tags: item.scene_tags,
+      scene_tags: resolvedTags,
       visibility: "public",
       previous_id: i > 0 ? chapterId(indexChapters[i - 1].chapter_number) : null,
       next_id: i < indexChapters.length - 1 ? chapterId(indexChapters[i + 1].chapter_number) : null,
-      chapter_video_url: videoUrl,
-      full_text_markdown: cleanedText,
+      chapter_video_url: structure.videoUrl,
+      full_text_markdown: structure.cleanedText,
     });
   }
 
