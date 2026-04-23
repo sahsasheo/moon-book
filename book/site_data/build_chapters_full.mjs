@@ -170,38 +170,60 @@ async function build() {
   const warnings = [];
   const indexText = await fs.readFile(paths.index, "utf8");
   const indexChapters = parseIndex(indexText);
-  const chapters = [];
 
-  for (let i = 0; i < indexChapters.length; i += 1) {
-    const item = indexChapters[i];
-    const id = chapterId(item.chapter_number);
-    const markdownPath = path.join(paths.chaptersDir, `${String(item.chapter_number).padStart(2, "0")}.md`);
+  // Создаем словарь метаданных из индекса по названию главы (в нижнем регистре)
+  const indexMap = new Map();
+  for (const item of indexChapters) {
+    indexMap.set(item.chapter_title.toLowerCase(), item);
+  }
+
+  const chapters = [];
+  
+  // Читаем файлы из папки, фильтруем только .md и сортируем по имени (как в ОС)
+  const dirFiles = await fs.readdir(paths.chaptersDir);
+  const mdFiles = dirFiles.filter(f => f.endsWith(".md")).sort();
+
+  for (let i = 0; i < mdFiles.length; i += 1) {
+    const filename = mdFiles[i];
+    const chapter_number = i + 1; // Номер по порядку в папке
+    const id = chapterId(chapter_number);
+    const markdownPath = path.join(paths.chaptersDir, filename);
     const fullText = await readMarkdownFile(markdownPath);
 
     if (fullText === null) {
-      warn(warnings, `[warn] Нет файла главы: ${path.relative(repoRoot, markdownPath)}`);
+      warn(warnings, `[warn] Ошибка чтения файла: ${filename}`);
+      continue;
     }
 
     const structure = extractChapterStructure(fullText);
     if (!structure.title) {
-      warn(warnings, `[warn] В главе нет заголовка ##: ${id}`);
+      warn(warnings, `[warn] В главе нет заголовка ##: ${filename}`);
     }
 
-    const resolvedTitle = structure.title || item.chapter_title;
+    // Ищем метаданные в индексе по названию главы
+    const normalizedFileTitle = normalizeTitle(structure.title).toLowerCase();
+    const item = indexMap.get(normalizedFileTitle) || {};
+
+    if (!item.chapter_title) {
+       warn(warnings, `[info] Глава "${structure.title}" (${filename}) не найдена в индексе. Будет использована без метаданных.`);
+    }
+
+    const resolvedTitle = structure.title || item.chapter_title || "Без названия";
     const resolvedSummary = structure.annotation || item.short_summary || "";
-    const resolvedTags = structure.sceneTags.length > 0 ? structure.sceneTags : item.scene_tags;
+    const resolvedTags = structure.sceneTags.length > 0 ? structure.sceneTags : (item.scene_tags || []);
+    const resolvedType = item.chapter_type || "сцена";
 
     chapters.push({
       id,
-      chapter_number: item.chapter_number,
+      chapter_number,
       chapter_title: resolvedTitle,
       short_summary: resolvedSummary,
       chapter_annotation: structure.annotation,
-      chapter_type: item.chapter_type,
+      chapter_type: resolvedType,
       scene_tags: resolvedTags,
       visibility: "public",
-      previous_id: i > 0 ? chapterId(indexChapters[i - 1].chapter_number) : null,
-      next_id: i < indexChapters.length - 1 ? chapterId(indexChapters[i + 1].chapter_number) : null,
+      previous_id: chapter_number > 1 ? chapterId(chapter_number - 1) : null,
+      next_id: chapter_number < mdFiles.length ? chapterId(chapter_number + 1) : null,
       chapter_video_url: structure.videoUrl,
       full_text_markdown: structure.cleanedText,
     });
