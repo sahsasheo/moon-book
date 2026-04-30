@@ -248,6 +248,17 @@ a {
   color: var(--accent);
 }
 
+.recent-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 10px;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #4CAF50;
+  vertical-align: middle;
+}
+
 .chapter-card__meta {
   color: var(--muted);
   font-size: 0.95rem;

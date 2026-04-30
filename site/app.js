@@ -302,8 +302,13 @@ function renderIndex() {
 
     const link = document.createElement("a");
     link.href = getPublicChapterUrl(chapter, state.activeTag);
-    const recentMarker = chapter.is_recent ? " 🆕" : "";
-    link.textContent = `${chapter.chapter_number}. ${escapeForText(chapter.chapter_title)}${recentMarker}`;
+    link.textContent = `${chapter.chapter_number}. ${escapeForText(chapter.chapter_title)}`;
+    if (chapter.is_recent) {
+      const dot = document.createElement("span");
+      dot.className = "recent-indicator";
+      dot.title = "Недавно обновлено";
+      link.append(dot);
+    }
     title.append(link);
 
     const meta = document.createElement("div");
@@ -377,9 +382,14 @@ function renderChapterPage() {
     return;
   }
 
-  const recentMarker = chapter.is_recent ? " 🆕" : "";
   document.title = `Под Огромной Луной — ${chapter.chapter_title}`;
-  pageTitle.textContent = `${chapter.chapter_number}. ${chapter.chapter_title}${recentMarker}`;
+  pageTitle.textContent = `${chapter.chapter_number}. ${chapter.chapter_title}`;
+  if (chapter.is_recent) {
+    const dot = document.createElement("span");
+    dot.className = "recent-indicator";
+    dot.title = "Недавно обновлено";
+    pageTitle.append(dot);
+  }
 
   const { annotation, cleanedText } = extractAnnotation(chapter.full_text_markdown || "");
 

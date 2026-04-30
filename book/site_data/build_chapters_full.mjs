@@ -57,12 +57,16 @@ function parseIndex(indexText) {
       extractField(block, "- сценические теги") || extractField(block, "сценические теги"),
     );
 
+    const is_recent = current[2].includes("🆕");
+    const clean_title = current[2].replace("🆕", "").trim();
+
     chapters.push({
       chapter_number,
-      chapter_title,
+      chapter_title: clean_title,
       short_summary,
       chapter_type,
       scene_tags,
+      is_recent,
     });
   }
 
@@ -189,9 +193,6 @@ async function build() {
     const id = chapterId(chapter_number);
     const markdownPath = path.join(paths.chaptersDir, filename);
     const fullText = await readMarkdownFile(markdownPath);
-    const stats = await fs.stat(markdownPath);
-    const now = new Date();
-    const isRecent = (now - stats.mtime) < (48 * 60 * 60 * 1000); // 48 часов
 
     if (fullText === null) {
       warn(warnings, `[warn] Ошибка чтения файла: ${filename}`);
@@ -229,7 +230,7 @@ async function build() {
       next_id: chapter_number < mdFiles.length ? chapterId(chapter_number + 1) : null,
       chapter_video_url: structure.videoUrl,
       full_text_markdown: structure.cleanedText,
-      is_recent: isRecent,
+      is_recent: item.is_recent || false,
     });
   }
 
