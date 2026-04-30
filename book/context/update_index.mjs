@@ -103,6 +103,9 @@ async function updateIndex() {
     const now = new Date();
     const isRecent = (now - stats.mtime) < (48 * 60 * 60 * 1000); // 48 часов
 
+    const title = extractTitleFromMarkdown(content);
+    const normalizedTitle = title.toLowerCase();
+
     const meta = oldData.get(normalizedTitle) || {
       annotation: "Нет описания.",
       type: "сцена",
