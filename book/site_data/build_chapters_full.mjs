@@ -189,6 +189,9 @@ async function build() {
     const id = chapterId(chapter_number);
     const markdownPath = path.join(paths.chaptersDir, filename);
     const fullText = await readMarkdownFile(markdownPath);
+    const stats = await fs.stat(markdownPath);
+    const now = new Date();
+    const isRecent = (now - stats.mtime) < (48 * 60 * 60 * 1000); // 48 часов
 
     if (fullText === null) {
       warn(warnings, `[warn] Ошибка чтения файла: ${filename}`);
@@ -226,6 +229,7 @@ async function build() {
       next_id: chapter_number < mdFiles.length ? chapterId(chapter_number + 1) : null,
       chapter_video_url: structure.videoUrl,
       full_text_markdown: structure.cleanedText,
+      is_recent: isRecent,
     });
   }
 

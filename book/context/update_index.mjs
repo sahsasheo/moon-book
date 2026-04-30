@@ -99,10 +99,10 @@ async function updateIndex() {
     const filename = mdFiles[i];
     const filePath = path.join(paths.chaptersDir, filename);
     const content = await fs.readFile(filePath, 'utf8');
-    
-    const title = extractTitleFromMarkdown(content);
-    const normalizedTitle = title.toLowerCase();
-    
+    const stats = await fs.stat(filePath);
+    const now = new Date();
+    const isRecent = (now - stats.mtime) < (48 * 60 * 60 * 1000); // 48 часов
+
     const meta = oldData.get(normalizedTitle) || {
       annotation: "Нет описания.",
       type: "сцена",
@@ -113,8 +113,9 @@ async function updateIndex() {
     };
 
     const chapterNum = String(i + 1).padStart(2, '0');
+    const recentTag = isRecent ? " 🆕" : "";
     
-    newIndexMd += `## ${chapterNum}. ${title}\n\n`;
+    newIndexMd += `## ${chapterNum}. ${title}${recentTag}\n\n`;
     newIndexMd += `Краткое содержание: ${meta.annotation}\n\n`;
     newIndexMd += `- тип: ${meta.type}\n`;
     if (meta.scene_tags) newIndexMd += `- сценические теги: ${meta.scene_tags}\n`;
